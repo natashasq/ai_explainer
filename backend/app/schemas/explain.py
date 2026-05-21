@@ -11,6 +11,12 @@ class ExplainRequest(BaseModel):
     messages: list[ChatMessage]
 
 
+class SourceItem(BaseModel):
+    source: str
+    text: str
+
+
 class ExplainResponse(BaseModel):
     answer: str
     suggested_questions: list[str]
+    sources: list[SourceItem]

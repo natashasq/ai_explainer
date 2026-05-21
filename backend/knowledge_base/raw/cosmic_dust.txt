@@ -1,0 +1,20 @@
+Cosmic dust – also called extraterrestrial dust, space dust, or star dust – is dust that occurs in outer space or has fallen onto Earth.[1][2] Most cosmic dust particles measure between a few molecules and 0.1 mm (100 μm), such as micrometeoroids (<30 μm) and meteoroids (>30 μm).[3] Cosmic dust can be further distinguished by its astronomical location: intergalactic dust, interstellar dust, interplanetary dust (as in the zodiacal cloud), and circumplanetary dust (as in a planetary ring). There are several methods to obtain space dust measurement.
+
+In the Solar System, interplanetary dust causes the zodiacal light. Solar System dust includes comet dust, planetary dust (like from Mars),[4] asteroidal dust, dust from the Kuiper belt, and interstellar dust passing through the Solar System. Thousands of tons of cosmic dust are estimated to reach Earth's surface every year,[5] with most grains having a mass between 10−16 kg (0.1 pg) and 10−4 kg (0.1 g).[5] The density of the dust cloud through which the Earth is traveling is approximately 10−6 dust grains/m3.[6]
+
+Cosmic dust contains some complex organic compounds (amorphous organic solids with a mixed aromatic–aliphatic structure) that could be created naturally, and rapidly, by stars.[7][8][9] A smaller fraction of dust in space is "stardust" consisting of larger refractory minerals that condensed as matter left by stars.
+
+Interstellar dust particles were collected by the Stardust spacecraft and samples were returned to Earth in 2006.[10][11][12][13]
+
+Study and importance
+
+Artist's impression of dust formation around a supernova explosion.[14]
+Cosmic dust was once solely an annoyance to astronomers, as it obscures objects they wished to observe. When infrared astronomy began, the dust particles were observed to be significant and vital components of astrophysical processes. Their analysis can reveal information about phenomena like the formation of the Solar System.[15] For example, cosmic dust can drive the mass loss when a star is nearing the end of its life, play a part in the early stages of star formation, and form planets. In the Solar System, dust plays a major role in the zodiacal light, Saturn's B Ring spokes, the outer diffuse planetary rings at Jupiter, Saturn, Uranus and Neptune, and comets.
+
+
+Zodiacal light caused by cosmic dust.[16]
+The interdisciplinary study of dust brings together different scientific fields: physics (solid-state, electromagnetic theory, surface physics, statistical physics, thermal physics), fractal mathematics, surface chemistry on dust grains, meteoritics, as well as every branch of astronomy and astrophysics.[17] These disparate research areas can be linked by the following theme: the cosmic dust particles evolve cyclically; chemically, physically and dynamically. The evolution of dust traces out paths in which the Universe recycles material, in processes analogous to the daily recycling steps with which many people are familiar: production, storage, processing, collection, consumption, and discarding.
+
+Observations and measurements of cosmic dust in different regions provide an important insight into the Universe's recycling processes; in the clouds of the diffuse interstellar medium, in molecular clouds, in the circumstellar dust of young stellar objects, and in planetary systems such as the Solar System, where astronomers consider dust as in its most recycled state. The astronomers accumulate observational 'snapshots' of dust at different stages of its life and, over time, form a more complete movie of the Universe's complicated recycling steps.
+
+Parameters such as the particle's initial motion, material properties, intervening plasma and magnetic field determined the dust particle's arrival at the dust detector. Slightly changing any of these parameters can give significantly different dust dynamical behavior. Therefore, one can learn about where that object came from, and what is (in) the intervening medium.
