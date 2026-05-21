@@ -10,7 +10,10 @@ router = APIRouter(prefix="/api", tags=["explain"])
 @router.post("/explain", response_model=ExplainResponse)
 def explain(request: ExplainRequest):
     try:
-        result = explain_from_messages(request.messages)
+        result = explain_from_messages(
+            request.messages,
+            request.knowledge_base_id,
+        )
         return ExplainResponse(**result)
     except ValueError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
@@ -21,5 +24,8 @@ def explain(request: ExplainRequest):
 
 @router.post("/explain-stream")
 def explain_stream(request: ExplainRequest):
-    generator = stream_answer_from_messages(request.messages)
+    generator = stream_answer_from_messages(
+        request.messages,
+        request.knowledge_base_id,
+    )
     return StreamingResponse(generator, media_type="text/plain; charset=utf-8")

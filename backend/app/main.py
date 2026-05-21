@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.routes.explain import router as explain_router
+from app.routes.upload import router as upload_router
 
 app = FastAPI(title=settings.app_name, version=settings.VERSION)
 
@@ -14,6 +15,7 @@ app.add_middleware(
 )
 
 app.include_router(explain_router)
+app.include_router(upload_router)
 
 
 @app.get("/")

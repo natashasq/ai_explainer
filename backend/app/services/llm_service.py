@@ -56,7 +56,11 @@ def get_last_user_message(messages: list[ChatMessage]) -> str:
 def stream_answer_from_messages(messages: list[ChatMessage]) -> Generator[str, None, None]:
     user_query = get_last_user_message(messages)
     retrieved_chunks = retrieve_relevant_chunks(
-        user_query, top_k=3, min_score=0.35)
+        user_query,
+        knowledge_base_id=knowledge_base_id,
+        top_k=3,
+        min_score=0.35,
+    )
 
     if not retrieved_chunks:
         fallback_text = (
@@ -113,7 +117,11 @@ def stream_answer_from_messages(messages: list[ChatMessage]) -> Generator[str, N
 def explain_from_messages(messages: list[ChatMessage]) -> dict:
     user_query = get_last_user_message(messages)
     retrieved_chunks = retrieve_relevant_chunks(
-        user_query, top_k=3, min_score=0.35)
+        user_query,
+        knowledge_base_id=knowledge_base_id,
+        top_k=3,
+        min_score=0.35,
+    )
 
     if not retrieved_chunks:
         return {

@@ -1,7 +1,6 @@
 import json
 import math
 import os
-from functools import lru_cache
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -9,7 +8,8 @@ from openai import OpenAI
 
 load_dotenv()
 
-EMBEDDINGS_FILE = Path("knowledge_base/processed/embeddings.json")
+DEFAULT_EMBEDDINGS_FILE = Path("knowledge_base/processed/embeddings.json")
+UPLOAD_PROCESSED_DIR = Path("knowledge_base/uploads/processed")
 EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -29,17 +29,21 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
     return dot_product / (norm_a * norm_b)
 
 
-@lru_cache(maxsize=1)
-def load_embedded_chunks() -> list[dict]:
-    if not EMBEDDINGS_FILE.exists():
-        raise FileNotFoundError(
-            f"Embeddings file not found: {EMBEDDINGS_FILE}")
+def load_embedded_chunks_for_kb(knowledge_base_id: str) -> list[dict]:
+    if knowledge_base_id == "default":
+        path = DEFAULT_EMBEDDINGS_FILE
+    else:
+        path = UPLOAD_PROCESSED_DIR / f"{knowledge_base_id}.json"
 
-    with EMBEDDINGS_FILE.open("r", encoding="utf-8") as f:
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Knowledge base embeddings not found for: {knowledge_base_id}")
+
+    with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
 
     if not isinstance(data, list):
-        raise ValueError("embeddings.json must contain a list")
+        raise ValueError("Knowledge base embeddings file must contain a list")
 
     return data
 
@@ -52,15 +56,19 @@ def get_query_embedding(query: str) -> list[float]:
     return response.data[0].embedding
 
 
-def retrieve_relevant_chunks(query: str, top_k: int = 3, min_score: float = 0.35) -> list[dict]:
-    embedded_chunks = load_embedded_chunks()
+def retrieve_relevant_chunks(
+    query: str,
+    knowledge_base_id: str,
+    top_k: int = 3,
+    min_score: float = 0.35,
+) -> list[dict]:
+    embedded_chunks = load_embedded_chunks_for_kb(knowledge_base_id)
     query_embedding = get_query_embedding(query)
 
     scored_chunks: list[dict] = []
 
     for chunk in embedded_chunks:
         score = cosine_similarity(query_embedding, chunk["embedding"])
-
         scored_chunks.append(
             {
                 "id": chunk["id"],
@@ -71,16 +79,10 @@ def retrieve_relevant_chunks(query: str, top_k: int = 3, min_score: float = 0.35
         )
 
     scored_chunks.sort(key=lambda item: item["score"], reverse=True)
-
     top_chunks = scored_chunks[:top_k]
-
-    print("\nTop retrieved chunks:")
-    for chunk in top_chunks:
-        print(f'{chunk["source"]} | score={chunk["score"]:.4f}')
 
     relevant_chunks = [
         chunk for chunk in top_chunks if chunk["score"] >= min_score]
-
     return relevant_chunks
 
 

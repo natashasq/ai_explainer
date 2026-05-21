@@ -9,6 +9,7 @@ class ChatMessage(BaseModel):
 
 class ExplainRequest(BaseModel):
     messages: list[ChatMessage]
+    knowledge_base_id: str = "default"
 
 
 class SourceItem(BaseModel):
