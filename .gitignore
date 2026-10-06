@@ -18,3 +18,13 @@ node_modules/
 
 # Logs
 *.log
+# Python virtualenv
+.venv/
+
+# Editor
+.vscode/
+
+# Generated data (rebuilt by the app)
+backend/knowledge_base/chroma/
+backend/knowledge_base/uploads/
+backend/knowledge_base/processed/
