@@ -6,10 +6,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
 
+from app.services.chroma_store import collection_exists
+from app.services.chroma_store import query_chunks as chroma_query_chunks
+
 load_dotenv()
 
-DEFAULT_EMBEDDINGS_FILE = Path("knowledge_base/processed/embeddings.json")
-UPLOAD_PROCESSED_DIR = Path("knowledge_base/uploads/processed")
+_BASE_DIR = Path(__file__).resolve().parents[2]
+DEFAULT_EMBEDDINGS_FILE = _BASE_DIR / "knowledge_base/processed/embeddings.json"
+UPLOAD_PROCESSED_DIR = _BASE_DIR / "knowledge_base/uploads/processed"
 EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -29,11 +33,20 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
     return dot_product / (norm_a * norm_b)
 
 
-def load_embedded_chunks_for_kb(knowledge_base_id: str) -> list[dict]:
+def get_knowledge_base_path(knowledge_base_id: str) -> Path:
     if knowledge_base_id == "default":
-        path = DEFAULT_EMBEDDINGS_FILE
-    else:
-        path = UPLOAD_PROCESSED_DIR / f"{knowledge_base_id}.json"
+        return DEFAULT_EMBEDDINGS_FILE
+    return UPLOAD_PROCESSED_DIR / f"{knowledge_base_id}.json"
+
+
+def knowledge_base_exists(knowledge_base_id: str) -> bool:
+    if knowledge_base_id == "default":
+        return DEFAULT_EMBEDDINGS_FILE.exists()
+    return collection_exists(knowledge_base_id)
+
+
+def load_embedded_chunks_for_kb(knowledge_base_id: str) -> list[dict]:
+    path = get_knowledge_base_path(knowledge_base_id)
 
     if not path.exists():
         raise FileNotFoundError(
@@ -62,9 +75,13 @@ def retrieve_relevant_chunks(
     top_k: int = 3,
     min_score: float = 0.35,
 ) -> list[dict]:
-    embedded_chunks = load_embedded_chunks_for_kb(knowledge_base_id)
     query_embedding = get_query_embedding(query)
 
+    if knowledge_base_id != "default":
+        return chroma_query_chunks(knowledge_base_id, query_embedding, top_k, min_score)
+
+    # default KB: brute-force cosine search over the pre-built JSON
+    embedded_chunks = load_embedded_chunks_for_kb(knowledge_base_id)
     scored_chunks: list[dict] = []
 
     for chunk in embedded_chunks:
@@ -81,9 +98,10 @@ def retrieve_relevant_chunks(
     scored_chunks.sort(key=lambda item: item["score"], reverse=True)
     top_chunks = scored_chunks[:top_k]
 
-    relevant_chunks = [
-        chunk for chunk in top_chunks if chunk["score"] >= min_score]
-    return relevant_chunks
+    for chunk in top_chunks:
+        print(f"[RAG] score={chunk['score']:.3f} | {chunk['source']} | {chunk['text'][:60]}...")
+
+    return [chunk for chunk in top_chunks if chunk["score"] >= min_score]
 
 
 def build_context_block(chunks: list[dict]) -> str:

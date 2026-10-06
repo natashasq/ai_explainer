@@ -53,7 +53,7 @@ def get_last_user_message(messages: list[ChatMessage]) -> str:
     raise ValueError("No user message found in conversation history")
 
 
-def stream_answer_from_messages(messages: list[ChatMessage]) -> Generator[str, None, None]:
+def stream_answer_from_messages(messages: list[ChatMessage], knowledge_base_id: str = "default") -> Generator[str, None, None]:
     user_query = get_last_user_message(messages)
     retrieved_chunks = retrieve_relevant_chunks(
         user_query,
@@ -114,7 +114,7 @@ def stream_answer_from_messages(messages: list[ChatMessage]) -> Generator[str, N
         raise
 
 
-def explain_from_messages(messages: list[ChatMessage]) -> dict:
+def explain_from_messages(messages: list[ChatMessage], knowledge_base_id: str = "default") -> dict:
     user_query = get_last_user_message(messages)
     retrieved_chunks = retrieve_relevant_chunks(
         user_query,
@@ -149,13 +149,12 @@ def explain_from_messages(messages: list[ChatMessage]) -> dict:
             continue
 
         seen_sources.add(source_name)
-
-    formatted_sources.append(
-        {
-            "source": source_name,
-            "text": chunk["text"],
-        }
-    )
+        formatted_sources.append(
+            {
+                "source": source_name,
+                "text": chunk["text"],
+            }
+        )
 
     openai_input = [
         {

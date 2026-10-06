@@ -3,12 +3,19 @@ from fastapi.responses import StreamingResponse
 
 from app.schemas.explain import ExplainRequest, ExplainResponse
 from app.services.llm_service import explain_from_messages, stream_answer_from_messages
+from app.services.rag_service import knowledge_base_exists
 
 router = APIRouter(prefix="/api", tags=["explain"])
 
 
 @router.post("/explain", response_model=ExplainResponse)
 def explain(request: ExplainRequest):
+    if not knowledge_base_exists(request.knowledge_base_id):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Knowledge base not found: {request.knowledge_base_id}",
+        )
+
     try:
         result = explain_from_messages(
             request.messages,
@@ -24,6 +31,12 @@ def explain(request: ExplainRequest):
 
 @router.post("/explain-stream")
 def explain_stream(request: ExplainRequest):
+    if not knowledge_base_exists(request.knowledge_base_id):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Knowledge base not found: {request.knowledge_base_id}",
+        )
+
     generator = stream_answer_from_messages(
         request.messages,
         request.knowledge_base_id,

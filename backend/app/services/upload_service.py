@@ -1,17 +1,19 @@
-import json
 import os
 import re
+from io import BytesIO
 from pathlib import Path
 from uuid import uuid4
 
 from fastapi import UploadFile
 from openai import OpenAI
 from dotenv import load_dotenv
+from pypdf import PdfReader
+from app.services.chroma_store import add_chunks
 
 load_dotenv()
 
-UPLOAD_RAW_DIR = Path("knowledge_base/uploads/raw")
-UPLOAD_PROCESSED_DIR = Path("knowledge_base/uploads/processed")
+_BASE_DIR = Path(__file__).resolve().parents[2]
+UPLOAD_RAW_DIR = _BASE_DIR / "knowledge_base/uploads/raw"
 EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -87,13 +89,26 @@ def get_embedding(text: str) -> list[float]:
     return response.data[0].embedding
 
 
-async def process_uploaded_txt_file(file: UploadFile) -> dict:
+def extract_text_from_pdf(content: bytes) -> str:
+    reader = PdfReader(BytesIO(content))
+    pages = [page.extract_text() or "" for page in reader.pages]
+    return "\n".join(pages)
+
+
+async def process_uploaded_file(file: UploadFile, existing_kb_id: str | None = None) -> dict:
+    filename = file.filename or "document"
     content = await file.read()
 
-    try:
-        text = content.decode("utf-8")
-    except UnicodeDecodeError as exc:
-        raise ValueError("File must be valid UTF-8 text") from exc
+    if filename.lower().endswith(".pdf"):
+        try:
+            text = extract_text_from_pdf(content)
+        except Exception as exc:
+            raise ValueError("Could not extract text from PDF") from exc
+    else:
+        try:
+            text = content.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError("File must be valid UTF-8 text") from exc
 
     normalized = normalize_text(text)
 
@@ -107,11 +122,10 @@ async def process_uploaded_txt_file(file: UploadFile) -> dict:
     if not chunk_texts:
         raise ValueError("Could not generate chunks from the uploaded file")
 
-    knowledge_base_id = f"upload_{uuid4().hex[:8]}"
-    safe_name = slugify_filename(file.filename or "document")
+    knowledge_base_id = existing_kb_id if existing_kb_id and existing_kb_id != "default" else f"upload_{uuid4().hex[:8]}"
+    safe_name = slugify_filename(filename)
 
     UPLOAD_RAW_DIR.mkdir(parents=True, exist_ok=True)
-    UPLOAD_PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
     raw_path = UPLOAD_RAW_DIR / f"{knowledge_base_id}_{safe_name}.txt"
     raw_path.write_text(normalized, encoding="utf-8")
@@ -120,24 +134,19 @@ async def process_uploaded_txt_file(file: UploadFile) -> dict:
 
     for index, chunk_text in enumerate(chunk_texts):
         embedding = get_embedding(chunk_text)
-
         embedded_chunks.append(
             {
                 "id": f"{knowledge_base_id}_{index}",
-                "source": file.filename or "uploaded.txt",
+                "source": filename,
                 "text": chunk_text,
                 "embedding": embedding,
             }
         )
 
-    processed_path = UPLOAD_PROCESSED_DIR / f"{knowledge_base_id}.json"
-    processed_path.write_text(
-        json.dumps(embedded_chunks, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    add_chunks(knowledge_base_id, embedded_chunks)
 
     return {
         "knowledge_base_id": knowledge_base_id,
-        "filename": file.filename or "uploaded.txt",
+        "filename": filename,
         "chunk_count": len(embedded_chunks),
     }
