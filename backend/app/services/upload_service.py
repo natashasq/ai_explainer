@@ -9,6 +9,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from pypdf import PdfReader
 from app.services.chroma_store import add_chunks
+from app.services.chunking import chunk_text, normalize_text
 
 load_dotenv()
 
@@ -17,63 +18,6 @@ UPLOAD_RAW_DIR = _BASE_DIR / "knowledge_base/uploads/raw"
 EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-MAX_CHARS = 500
-MIN_CHARS = 150
-
-
-def normalize_text(text: str) -> str:
-    lines = [line.strip() for line in text.splitlines()]
-    cleaned_lines = [line for line in lines if line]
-    return "\n".join(cleaned_lines)
-
-
-def split_into_paragraphs(text: str) -> list[str]:
-    return [p.strip() for p in text.split("\n") if p.strip()]
-
-
-def chunk_paragraphs(paragraphs: list[str], max_chars: int, min_chars: int) -> list[str]:
-    chunks: list[str] = []
-    current_chunk = ""
-
-    for paragraph in paragraphs:
-        candidate = f"{current_chunk}\n{paragraph}".strip(
-        ) if current_chunk else paragraph
-
-        if len(candidate) <= max_chars:
-            current_chunk = candidate
-        else:
-            if current_chunk:
-                chunks.append(current_chunk.strip())
-
-            if len(paragraph) > max_chars:
-                start = 0
-                while start < len(paragraph):
-                    piece = paragraph[start:start + max_chars].strip()
-                    if piece:
-                        chunks.append(piece)
-                    start += max_chars
-                current_chunk = ""
-            else:
-                current_chunk = paragraph
-
-    if current_chunk:
-        chunks.append(current_chunk.strip())
-
-    merged_chunks: list[str] = []
-
-    for chunk in chunks:
-        if (
-            merged_chunks
-            and len(chunk) < min_chars
-            and len(merged_chunks[-1]) + 1 + len(chunk) <= max_chars
-        ):
-            merged_chunks[-1] = f"{merged_chunks[-1]}\n{chunk}".strip()
-        else:
-            merged_chunks.append(chunk)
-
-    return merged_chunks
-
 
 def slugify_filename(filename: str) -> str:
     stem = Path(filename).stem.lower()
@@ -115,9 +59,7 @@ async def process_uploaded_file(file: UploadFile, existing_kb_id: str | None = N
     if len(normalized) < 30:
         raise ValueError("Uploaded file is too short")
 
-    paragraphs = split_into_paragraphs(normalized)
-    chunk_texts = chunk_paragraphs(
-        paragraphs, max_chars=MAX_CHARS, min_chars=MIN_CHARS)
+    chunk_texts = chunk_text(normalized)
 
     if not chunk_texts:
         raise ValueError("Could not generate chunks from the uploaded file")
@@ -132,13 +74,13 @@ async def process_uploaded_file(file: UploadFile, existing_kb_id: str | None = N
 
     embedded_chunks: list[dict] = []
 
-    for index, chunk_text in enumerate(chunk_texts):
-        embedding = get_embedding(chunk_text)
+    for index, chunk in enumerate(chunk_texts):
+        embedding = get_embedding(chunk)
         embedded_chunks.append(
             {
                 "id": f"{knowledge_base_id}_{index}",
                 "source": filename,
-                "text": chunk_text,
+                "text": chunk,
                 "embedding": embedding,
             }
         )
